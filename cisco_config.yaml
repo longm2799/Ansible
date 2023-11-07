@@ -1,0 +1,43 @@
+---
+- name: CONFIGURE CSR ROUTER
+  hosts: CSR1kv
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: DISABLE IP DOMAIN-LOOKUP
+      ios_config:
+        lines:
+          - no ip domain-lookup
+    - name: CONFIGURE SECRET
+      ios_config:
+        lines:
+          - enable secret PASSWORD
+    - name: CONFIGURE TELNET
+      ios_config:
+        parents: "line vty 0 4"
+        lines:
+          - password PASSWORD
+          - login
+    - name: SET IPv6 ADDRESS
+      ios_config:
+        parents: "interface GigabitEthernet1"
+        lines:
+          - description IPv6 ADDRESS
+          - ipv6 address 2001:DB8:ACAD:1::1/64
+          - ipv6 address FE80::1:1 link-local
+          
+    - name: CONFIG LOOPBACK
+      ios_config:
+        parents: "interface Loopback0"
+        lines:
+          - ip address 172.20.192.93 255.255.255.252
+          
+    - name: SHOW RUN
+      ios_command:
+        commands:
+          - show running-config
+      register: config
+    - name: SAVE OUTPUT TO ./backups/
+      copy:
+        content: "{{ config.stdout[0] }}"
+        dest: "ios_configurations/Router_output_{{ inventory_hostname }}.txt"
